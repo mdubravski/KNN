@@ -1,7 +1,109 @@
 
 from math import sqrt
+from random import seed
+from random import randrange
+from csv import reader
 
 class KNN:
+
+    ###################################################################
+    ################ Dataset Loading Helper Mehtods ###################
+    ###################################################################
+
+    # Load a CSV file
+    def loadCSV(self, filename):
+        dataset = list()
+        with open(filename, 'r') as file:
+            cReader = reader(file)
+            for row in cReader:
+                if not row:
+                    continue
+                dataset.append(row)
+        return dataset
+    
+    # Convert String column to float
+    def stringColToFloat(self, dataset, col):
+        for row in dataset:
+            row[col] = float(row[col].strip())
+    
+    # Convert String column to int
+    def stringColToInt(self, dataset, col):
+        classes = list()
+        for row in dataset:
+            classes.append(row[col])
+        unique = set(classes)
+        lookup = dict()
+        for i, value in enumerate(unique):
+            lookup[value] = i
+            # Print the mapping of string class names to their asciocated integer
+            print("[%s] => %d" % (value, i))
+        for row in dataset:
+            row[col] = lookup[row[col]]
+        return lookup
+
+     # Find min and max values for each column
+    def datasetMinMax(self, dataset):
+        minmax = list()
+        for i in range(len(dataset[0])):
+            colValues = [row[i] for row in dataset]
+            minVal = min(colValues)
+            maxVal = max(colValues)
+            minmax.append([minVal,maxVal])
+        return minmax
+    
+    # Rescale dataset cols to the range 0-1
+    def normalizeDataset(self, dataset, minmax):
+        for row in dataset:
+            for i in range(len(row)):
+                row[i] = (row[i] - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
+    
+    ###################################################################
+    ################ Algorithm Evaluation Methods #####################
+    ###################################################################
+
+    # Split dataset into k folds
+    def crossValidationSplit(self, dataset, n):
+        datasetSplit = list()
+        datasetCopy = list(dataset)
+        foldSize = int(len(dataset) / n)
+        for _ in range(n):
+            fold = list()
+            while len(fold) < foldSize:
+                i = randrange(len(datasetCopy))
+                fold.append(datasetCopy.pop(i))
+            datasetSplit.append(fold)
+        return datasetSplit
+    
+    # Find accuracy percentage
+    def accuracyMetric(self, actual, predicted):
+        numCorrect = 0
+        for i in range(len(actual)):
+            if actual[i] == predicted[i]:
+                numCorrect += 1
+        return numCorrect / float(len(actual)) * 100.0
+
+    # Evaluate an algorithm using a cross validation split
+    def evaluateAlgorithm(self, dataset, algo, nFolds, *args):
+        folds = self.crossValidationSplit(dataset, nFolds)
+        scores = list()
+        for fold in folds:
+            trainSet = list(folds)
+            trainSet.remove(fold)
+            trainSet = sum(trainSet, [])
+            testSet = list()
+            for row in fold:
+                rowCopy = list(row)
+                testSet.append(rowCopy)
+                rowCopy[-1] = None
+            predicted = algo(trainSet, testSet, *args)
+            actual = [row[-1] for row in fold]
+            accuracy = self.accuracyMetric(actual, predicted)
+            scores.append(accuracy)
+        return scores
+
+    ###################################################################
+    ################### kNN Algorithm Methods #########################
+    ###################################################################
 
     # Euclidian distance function this calcuates the Euclidian distance 
     # between two vectos represented as rows
@@ -35,12 +137,23 @@ class KNN:
             values.append(row[-1])
         prediction = max(set(values), key=values.count)
         return prediction
-        
+    
+    # kNN Algorithm
+    def kNearestNeighbors(self, train, test, numNeighbors):
+        predictions = list()
+        for row in test:
+            value = self.predictClassification(train,row,numNeighbors)
+            predictions.append(value)
+        return predictions
 
+###################################################################
+######################## Experiments ##############################
+###################################################################
 
 # Initialize knn object
 knn = KNN()
-# Example dataset for testing Euclidean distance function
+
+# Example datasets for testing 
 dataset = [[ 0.54857876,  5.25697175,0],
        [ 7.81764176,  9.17441769,1],
        [ 3.74230831,  2.06165119,0],
@@ -92,3 +205,39 @@ print("\n")
 print("Testing predictClassification(): ")
 prediction = knn.predictClassification(dataset, dataset[0], 3)
 print("Expected Classification: %d \nActual Classification: %d \n" % (dataset[0][-1], prediction))
+
+
+# Testing the kNN algo on the Iris Flowers dataset.
+print("Testing kNN Algorithm on the Iris Flowers dataset: ")
+
+seed(1)
+filename = "iris.csv"
+dataset = knn.loadCSV(filename)
+for i in range(len(dataset[0])-1):
+    knn.stringColToFloat(dataset,i)
+# Convert class colummn to integers
+knn.stringColToInt(dataset, len(dataset[0])-1)
+# Evaluate algorithm
+nFolds = 5
+numNeighbors = 5
+
+# This expierement evaluates the kNN algorithm using k-fold cross-validation with 5 folds.
+# The outputs from this expierement are the mean classification accuracy scores on each 
+# cross-validation fold and the mean accuracy score.
+print()
+print("Testing Mean Classification Accuracy Scores and Mean Accuracy Score(): ")
+scores = knn.evaluateAlgorithm(dataset, knn.kNearestNeighbors, nFolds, numNeighbors)
+print("Scores: %s" % scores)
+print("Mean Accuracy: %.3f%%\n" % (sum(scores)/float(len(scores))))
+
+# Making a prediction with kNN algo on Iris Dataset.
+# A new row of the dataset is defined and using the 
+# predictClassification() method we can predict what
+# class the new row should be defined as. 
+print("Making a prediction using kNN: ")
+# Define a new row
+newRow = [5.7,2.9,4.2,1.3]
+# Make class prediction
+predictedClass =  knn.predictClassification(dataset, newRow, numNeighbors)
+print("Data: %s \nPredicted: %s" % (newRow, predictedClass))
+
