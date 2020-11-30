@@ -36,7 +36,7 @@ class KNN:
         for i, value in enumerate(unique):
             lookup[value] = i
             # Print the mapping of string class names to their asciocated integer
-            print("[%s] => %d" % (value, i))
+            print("[%s] -> %d" % (value, i))
         for row in dataset:
             row[col] = lookup[row[col]]
         return lookup
@@ -199,9 +199,9 @@ for n in neighbors:
 print("\n")
 
 # Expierement for testing predictClassification()
-# this will print the expected classification of 0 and 
-# the actual classification predicted from the 3 most similar
-# neighbors in the dataset.
+# this will print the expected classification for the first row in
+# the dataset, and the actual classification predicted from the 3 
+# most similar neighbors in the dataset.
 print("Testing predictClassification(): ")
 prediction = knn.predictClassification(dataset, dataset[0], 3)
 print("Expected Classification: %d \nActual Classification: %d \n" % (dataset[0][-1], prediction))
@@ -213,6 +213,7 @@ print("Testing kNN Algorithm on the Iris Flowers dataset: ")
 seed(1)
 filename = "iris.csv"
 dataset = knn.loadCSV(filename)
+# Dataset is read in as a list of lists of strings, converting them to floats
 for i in range(len(dataset[0])-1):
     knn.stringColToFloat(dataset,i)
 # Convert class colummn to integers
@@ -233,11 +234,23 @@ print("Mean Accuracy: %.3f%%\n" % (sum(scores)/float(len(scores))))
 # Making a prediction with kNN algo on Iris Dataset.
 # A new row of the dataset is defined and using the 
 # predictClassification() method we can predict what
-# class the new row should be defined as. 
+# class the new row should be classified as. 
 print("Making a prediction using kNN: ")
-# Define a new row
-newRow = [5.7,2.9,4.2,1.3]
-# Make class prediction
-predictedClass =  knn.predictClassification(dataset, newRow, numNeighbors)
-print("Data: %s \nPredicted: %s" % (newRow, predictedClass))
+# Define a new rows.
+# Each row (irisSetosaRow, irisVersicolorRow, irisVirginicaRow)
+# corresponds to a row from the Iris Dataset with values changed
+# by a factor of 0.1.
+irisSetosaRow = [4.8,3.0,1.4,0.2]
+irisVersicolorRow = [5.5,2.6,4.1,1.2] 
+irisVirginicaRow = [7.6,3.9,6.8,2.3] 
+
+# Make class predictions
+predictedClass =  knn.predictClassification(dataset, irisSetosaRow, numNeighbors)
+print("Data: %s \nPredicted: %s\n" % (irisSetosaRow, predictedClass))
+
+predictedClass =  knn.predictClassification(dataset, irisVersicolorRow, numNeighbors)
+print("Data: %s \nPredicted: %s\n" % (irisVersicolorRow, predictedClass))
+
+predictedClass =  knn.predictClassification(dataset, irisVirginicaRow, numNeighbors)
+print("Data: %s \nPredicted: %s\n" % (irisVirginicaRow, predictedClass))
 
