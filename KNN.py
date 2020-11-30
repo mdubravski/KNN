@@ -120,7 +120,7 @@ class KNN:
         for trainRow in train:
             dist = self.euclideanDistance(testRow, trainRow)
             distances.append((trainRow,dist))
-        # Sort by the second element of the tuple
+        # Sort using the second element of the tuple
         distances.sort(key=lambda x: x[1])
         # Build list of most similar neighbors to testRow
         neighbors = list()
