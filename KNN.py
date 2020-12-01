@@ -1,6 +1,5 @@
 
 from math import sqrt
-from random import seed
 from random import randrange
 from csv import reader
 
@@ -10,7 +9,8 @@ class KNN:
     ################ Dataset Loading Helper Mehtods ###################
     ###################################################################
 
-    # Load a CSV file
+    # Load a CSV file ignoring empty rows
+    # returns a list of lists of instances
     def loadCSV(self, filename):
         dataset = list()
         with open(filename, 'r') as file:
@@ -24,38 +24,27 @@ class KNN:
     # Convert String column to float
     def stringColToFloat(self, dataset, col):
         for row in dataset:
+            # convert string to float value
+            # use .strip() to remove preceding or trailing whitespace
             row[col] = float(row[col].strip())
     
-    # Convert String column to int
+    # Convert String class value column to int
     def stringColToInt(self, dataset, col):
         classes = list()
         for row in dataset:
             classes.append(row[col])
+        # get unique class values
         unique = set(classes)
         lookup = dict()
+        # assign integer to each class value
         for i, value in enumerate(unique):
             lookup[value] = i
-            # Print the mapping of string class names to their asciocated integer
+            # print the mapping of string class names to their associated  integer
             print("[%s] -> %d" % (value, i))
+        # replace class string values with their associated integer values
         for row in dataset:
             row[col] = lookup[row[col]]
         return lookup
-
-     # Find min and max values for each column
-    def datasetMinMax(self, dataset):
-        minmax = list()
-        for i in range(len(dataset[0])):
-            colValues = [row[i] for row in dataset]
-            minVal = min(colValues)
-            maxVal = max(colValues)
-            minmax.append([minVal,maxVal])
-        return minmax
-    
-    # Rescale dataset cols to the range 0-1
-    def normalizeDataset(self, dataset, minmax):
-        for row in dataset:
-            for i in range(len(row)):
-                row[i] = (row[i] - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
     
     ###################################################################
     ################ Algorithm Evaluation Methods #####################
@@ -101,12 +90,20 @@ class KNN:
             scores.append(accuracy)
         return scores
 
+    # kNN Algorithm for use in evaluateAlgorithm()
+    def kNearestNeighbors(self, train, test, numNeighbors):
+        predictions = list()
+        for row in test:
+            value = self.predictClassification(train,row,numNeighbors)
+            predictions.append(value)
+        return predictions
+
     ###################################################################
     ################### kNN Algorithm Methods #########################
     ###################################################################
 
-    # Euclidian distance function this calcuates the Euclidian distance 
-    # between two vectos represented as rows
+    # Euclidian distance function.
+    # This calculates the Euclidian distance between two vectors represented as rows.
     def euclideanDistance(self, row1, row2):
         distance = 0.0
         for i in range(len(row1)-1):
@@ -130,22 +127,16 @@ class KNN:
     
     # Make a classification prediction with the nearest neighbors
     def predictClassification(self, train, testRow, numNeighbors):
+        # get the nearest neighbors
         neighbors = self.getNeighbors(train, testRow, numNeighbors)
-        # values = [row[-1] for row in neighbors]
+        # get the class of each instance in neighbors
         values = list()
         for row in neighbors:
             values.append(row[-1])
+        # return the most represented class/species
         prediction = max(set(values), key=values.count)
         return prediction
     
-    # kNN Algorithm
-    def kNearestNeighbors(self, train, test, numNeighbors):
-        predictions = list()
-        for row in test:
-            value = self.predictClassification(train,row,numNeighbors)
-            predictions.append(value)
-        return predictions
-
 ###################################################################
 ######################## Experiments ##############################
 ###################################################################
@@ -209,8 +200,6 @@ print("Expected Classification: %d \nActual Classification: %d \n" % (dataset[0]
 
 # Testing the kNN algo on the Iris Flowers dataset.
 print("Testing kNN Algorithm on the Iris Flowers dataset: ")
-
-seed(1)
 filename = "iris.csv"
 dataset = knn.loadCSV(filename)
 # Dataset is read in as a list of lists of strings, converting them to floats
